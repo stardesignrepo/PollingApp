@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        request.auth.token.email == 'portfolio.website.00@gmail.com' && 
+        request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Polls: Publicly readable; writable for initialization and admin management
+    match /polls/{pollId} {
+      allow read: if true;
+      allow write: if isValidId(pollId);
+    }
+
+    // Candidates: Publicly readable; writable for initialization and admin updates
+    match /candidates/{candidateId} {
+      allow read: if true;
+      allow write: if isValidId(candidateId);
+    }
+
+    // Aggregates: Publicly readable summary data; updated as ballots are cast
+    match /poll_aggregates/{pollId} {
+      allow read: if true;
+      allow write: if isValidId(pollId);
+    }
+
+    // Individual Ballots:
+    // Voters can record a ballot response.
+    // Read and delete restricted to verified admin to protect voter privacy.
+    match /ballots/{ballotId} {
+      allow create: if isValidId(ballotId);
+      allow update: if isValidId(ballotId);
+      allow read, delete: if isAdmin() && isValidId(ballotId);
+    }
+
+    // Verification records (anti-duplicate index):
+    // Allows logging and checking single-verification per identity.
+    match /verification_records/{recordId} {
+      allow create, read: if isValidId(recordId);
+      allow update, delete: if isAdmin();
+    }
+
+    // Audit and security events:
+    match /audit_security_events/{eventId} {
+      allow create: if isValidId(eventId);
+      allow read, delete: if isAdmin() && isValidId(eventId);
+    }
+
+    // Admin configuration
+    match /admins/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}

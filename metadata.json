@@ -1,0 +1,6 @@
+{
+  "name": "Milton Mayoral Public Opinion Poll",
+  "description": "An independent, unofficial public opinion poll on the Milton mayoral race. Featuring secure verification, geographic breakdown, and transparent methodology.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,146 @@
+{
+  "entities": {
+    "Poll": {
+      "title": "Poll",
+      "description": "Represents an opinion poll instance such as the Milton Mayoral race.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["active", "closed", "draft"] },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "status", "createdAt", "updatedAt"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "A candidate running in a specific poll presented with equal neutrality.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pollId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "ballotOrder": { "type": "number" },
+        "photoUrl": { "type": "string", "maxLength": 500 },
+        "bio": { "type": "string", "maxLength": 1500 },
+        "platformPriorities": { "type": "array" },
+        "neutralStatement": { "type": "string", "maxLength": 1000 },
+        "websiteUrl": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "pollId", "name", "ballotOrder", "createdAt"]
+    },
+    "Ballot": {
+      "title": "Ballot",
+      "description": "An individual submitted vote record separated from personal identifiable identity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pollId": { "type": "string", "maxLength": 128 },
+        "candidateId": { "type": "string", "maxLength": 128 },
+        "verificationStatus": { "type": "string", "enum": ["unverified", "google_verified", "phone_verified"] },
+        "selfReportedLocation": { "type": "string", "maxLength": 100 },
+        "selectedIssues": { "type": "array" },
+        "geoCountry": { "type": "string", "maxLength": 10 },
+        "geoProvince": { "type": "string", "maxLength": 100 },
+        "geoCity": { "type": "string", "maxLength": 100 },
+        "geoRegion": { "type": "string", "maxLength": 100 },
+        "ipHash": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "pollId", "candidateId", "verificationStatus", "createdAt"]
+    },
+    "VerificationRecord": {
+      "title": "VerificationRecord",
+      "description": "Enforces single verification per poll per verified identity without linking identity to candidate choices.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pollId": { "type": "string", "maxLength": 128 },
+        "identityHash": { "type": "string", "maxLength": 128 },
+        "verificationType": { "type": "string", "enum": ["google", "phone"] },
+        "ballotId": { "type": "string", "maxLength": 128 },
+        "verifiedAt": { "type": "string" }
+      },
+      "required": ["id", "pollId", "identityHash", "verificationType", "ballotId", "verifiedAt"]
+    },
+    "AuditSecurityEvent": {
+      "title": "AuditSecurityEvent",
+      "description": "System event log for suspicious activity, rate limit breaches, and bot detections.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pollId": { "type": "string", "maxLength": 128 },
+        "eventType": { "type": "string", "maxLength": 100 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+        "ipHash": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "pollId", "eventType", "severity", "timestamp"]
+    },
+    "PollAggregate": {
+      "title": "PollAggregate",
+      "description": "Aggregated response counts and geographic distributions for fast, privacy-preserving public display.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pollId": { "type": "string", "maxLength": 128 },
+        "totalVotes": { "type": "number" },
+        "verifiedVotes": { "type": "number" },
+        "unverifiedVotes": { "type": "number" },
+        "googleVerifiedVotes": { "type": "number" },
+        "phoneVerifiedVotes": { "type": "number" },
+        "candidateCounts": { "type": "object" },
+        "geoBreakdown": { "type": "object" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["id", "pollId", "totalVotes", "lastUpdated"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Whitelisted administrator accounts with access to administrative tools.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 200 },
+        "role": { "type": "string", "enum": ["superadmin", "editor"] },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/polls/{pollId}": {
+      "schema": { "$ref": "Poll" },
+      "description": "Public opinion polls created by administrators"
+    },
+    "/candidates/{candidateId}": {
+      "schema": { "$ref": "Candidate" },
+      "description": "Neutral candidate profiles participating in polls"
+    },
+    "/ballots/{ballotId}": {
+      "schema": { "$ref": "Ballot" },
+      "description": "Individual cast ballots without PII, submitted through backend code"
+    },
+    "/verification_records/{recordId}": {
+      "schema": { "$ref": "VerificationRecord" },
+      "description": "Anti-duplicate registry mapping verified identities to polls without recording candidate choice"
+    },
+    "/audit_security_events/{eventId}": {
+      "schema": { "$ref": "AuditSecurityEvent" },
+      "description": "Logs of abuse, rate limits, and bot mitigation events"
+    },
+    "/poll_aggregates/{pollId}": {
+      "schema": { "$ref": "PollAggregate" },
+      "description": "Pre-aggregated vote stats for public visualization"
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "AdminUser" },
+      "description": "Admin access control list"
+    }
+  }
+}
